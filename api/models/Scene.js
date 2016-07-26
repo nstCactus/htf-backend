@@ -8,17 +8,14 @@
 
 module.exports = {
   attributes: {
-    style: {
-      type:     'name',
+    name: {
+      type:     'string',
       required: true,
     },
 
 
     sets: {
       collection: 'set',
-    },
-    scene: {
-      model: 'scene',
     },
   },
 };
