@@ -11,57 +11,41 @@ module.exports = {
   attributes: {
     id: {
       primaryKey: true,
-      type:       'int',
+      type:       'integer',
       required:   true,
     },
     name: {
       type:     'string',
       required: true,
     },
-    label: {
-      type: 'string',
-    },
+    label:  { type: 'string' },
     origin: {
-      type:     'string',
-      required: true,
+      type: 'string',
+      // required: true,
       // alpha:     true,
       // uppercase: true,
       // size:      2,
     },
-    photo: {
-      type: 'string',
-    },
-    banner: {
-      type: 'string',
-    },
-    facebook: {
-      type: 'string',
-    },
-    soundcloud: {
-      type: 'string',
-    },
-    mixcloud: {
-      type: 'string',
-    },
-    website: {
+    photo:      { type: 'string' },
+    banner:     { type: 'string' },
+    facebook:   { type: 'string' },
+    soundcloud: { type: 'string' },
+    mixcloud:   { type: 'string' },
+    website:    {
       type: 'string',
       url:  true,
     },
-    bioFr: {
-      type: 'text',
-    },
-    bioEn: {
-      type: 'text',
-    },
+    bioFr:      { type: 'text' },
+    bioEn:      { type: 'text' },
     isFavorite: {
       type:       'boolean',
       defaultsTo: false,
     },
 
-
+    // Associations
     sets: {
       collection: 'set',
-      via:        'artists',
+      via:        'artist',
     },
   },
 };

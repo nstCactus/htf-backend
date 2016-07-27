@@ -14,7 +14,7 @@ module.exports = {
 
   attributes: {
     id: {
-      type:       'int',
+      type:       'integer',
       primaryKey: true,
       required:   true,
     },
@@ -22,39 +22,24 @@ module.exports = {
       type:     'string',
       required: true,
     },
-    label: {
-      type: 'string',
-    },
-    nationality: {
-      type: 'string',
-    },
-    country: {
-      type: 'string',
-    },
-    bio: {
-      type: 'string',
-    },
-    photo: {
-      type: 'string',
-    },
+    label:       { type: 'string' },
+    nationality: { type: 'string' },
+    country:     { type: 'string' },
+    bio:         { type: 'string' },
+    photo:       { type: 'string' },
 
     // Social handles
-    facebook: {
-      type: 'url',
-    },
-    soundcloud: {
-      type: 'url',
-    },
-    mixcloud: {
+    facebook:   { type: 'url' },
+    soundcloud: { type: 'url' },
+    mixcloud:   {
+      type:       'url',
       columnName: 'myspace',
     },
 
 
 
     // Music set related information
-    stage: {
-      type: 'int',
-    },
+    stage:     { type: 'integer' },
     timeStart: {
       type:       'datetime',
       columnName: 'time_start',
@@ -65,15 +50,9 @@ module.exports = {
     },
 
     // Set type
-    live: {
-      type: 'boolean',
-    },
-    dj: {
-      type: 'boolean',
-    },
-    gig: {
-      type: 'boolean',
-    },
+    live: { type: 'boolean' },
+    dj:   { type: 'boolean' },
+    gig:  { type: 'boolean' },
   },
 };
 

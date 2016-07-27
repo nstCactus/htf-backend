@@ -8,10 +8,8 @@
 
 module.exports = {
   attributes: {
-    style: {
-      type: 'string',
-    },
-    type: {
+    style: { type: 'string' },
+    type:  {
       type: 'string',
       enum: [ 'dj', 'live', 'gig', 'vj', 'pause' ],
     },
@@ -24,12 +22,16 @@ module.exports = {
       datetime: true,
     },
 
-
-    artists: {
-      collection: 'artist',
+    // Associations
+    artist: {
+      required:   true,
+      model:      'artist',
+      columnName: 'artist_id',
     },
-    scene: {
-      model: 'scene',
+    stage: {
+      required:   true,
+      model:      'stage',
+      columnName: 'stage_id',
     },
   },
 };
