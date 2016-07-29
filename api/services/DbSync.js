@@ -54,10 +54,31 @@ function handleSingleBooking(booking){
     if (err) {
       sails.log.error(`An error occurred while creating artist #${booking.id}.`);
       sails.log.debug(err);
+    } else {
+      var setType = 'live';
+
+      if (booking.dj === 1 || booking.dj === '1') {
+        setType = 'dj';
+      }
+      if (booking.gig === 1 || booking.gig === '1') {
+        setType = 'gig';
+      }
+
+
+      Set.create({
+        start:  booking.timeStart == 0 ? null : new Date(booking.timeStart * 1000), // eslint-disable-line eqeqeq
+        end:    booking.timeEnd == 0 ? null : new Date(booking.timeEnd * 1000), // eslint-disable-line eqeqeq
+        type:   setType,
+        artist: created.id,
+        stage:  booking.stage,
+      }).exec(function(err, created){
+        if (err) {
+          sails.log.error(`An error occurred while creating set for artist #${booking.id}.`);
+          sails.log.debug(err);
+        }
+      });
     }
   });
-
-  Set.create({ });
 }
 
 /**

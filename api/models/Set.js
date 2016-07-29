@@ -13,14 +13,8 @@ module.exports = {
       type: 'string',
       enum: [ 'dj', 'live', 'gig', 'vj', 'pause' ],
     },
-    start: {
-      type:     'string',
-      datetime: true,
-    },
-    end: {
-      type:     'string',
-      datetime: true,
-    },
+    start: { type: 'datetime' },
+    end:   { type: 'datetime' },
 
     // Associations
     artist: {
