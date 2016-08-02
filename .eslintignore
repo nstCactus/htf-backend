@@ -1,5 +1,5 @@
-tasks/
-Gruntfile.js
-app.js
+/tasks/
+/Gruntfile.js
+/app.js
 /assets/js/dependencies/sails.io.js
-
+/config

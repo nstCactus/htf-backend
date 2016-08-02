@@ -9,13 +9,11 @@
 /* global Set */
 /* global FacebookGraph */
 
-const _         = require('lodash');
-const request   = require('request');
-const fse       = require('fs-extra');
-const path      = require('path');
-const url       = require('url');
-var picturePath = path.join(sails.config.appPath, 'media', 'artists');
-fse.mkdirp(picturePath);
+const _       = require('lodash');
+const request = require('request');
+const fs      = require('fs');
+const path    = require('path');
+const url     = require('url');
 
 module.exports = {
   sync: function(){
@@ -74,7 +72,7 @@ function handleSingleBooking(booking){
         type:   setType,
         artist: createdArtist.id,
         stage:  booking.stage,
-      }).exec(function(err, created){
+      }).exec(function(err){
         if (err) {
           sails.log.error(`An error occurred while creating set for artist #${booking.id}.`);
           sails.log.debug(err);
@@ -177,16 +175,17 @@ function handleGraphApiPagePictResponse(err, data, pageId, artistId){
  * @return {void}
  */
 function savePicture(fileUrl, filename, callback){
-  // TODO: Gérer les timeout
-  var fullPath = path.join(picturePath, filename);
+  var fullPath = path.join(Artist.picturePath, filename);
+
   var currentRequest = request(fileUrl)
     .on('response', handleResponse)
     .on('error', callback);
 
+  // TODO: Gérer les timeout
   function handleResponse(response){
     // Start piping to a file, if the request was a success (2xx) or a redirection (3xx)
     if (response.statusCode >= 200 && response.statusCode < 400) {
-      currentRequest.pipe(fse.createWriteStream(fullPath));
+      currentRequest.pipe(fs.createWriteStream(fullPath));
     }
 
     // Wait for request completion to announce success

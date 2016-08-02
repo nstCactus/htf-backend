@@ -6,9 +6,20 @@
  */
 'use strict';
 
+const path         = require('path');
+const fse          = require('fs-extra');
+const PICTURE_PATH = path.join(sails.config.appPath, 'media', 'artists');
+
+// Create the artist's pictures and covers dir
+if (!fse.existsSync(PICTURE_PATH)) { // eslint-disable-line no-sync
+  fse.mkdirpSync(PICTURE_PATH); // eslint-disable-line no-sync
+}
+
+
 module.exports = {
-  autoPK:     false,
-  attributes: {
+  picturePath: PICTURE_PATH,
+  autoPK:      false,
+  attributes:  {
     id: {
       primaryKey: true,
       type:       'integer',
