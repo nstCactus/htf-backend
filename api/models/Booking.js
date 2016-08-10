@@ -7,7 +7,7 @@
 
 module.exports = {
   tableName:     'htf2016_booking_table',
-  connection:    'hadraDb',
+  connection:    'hadra',
   autoCreatedAt: false,
   autoUpdatedAt: false,
   migrate:       'safe',

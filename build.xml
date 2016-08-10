@@ -1,0 +1,172 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<project name="htf-backend" default="build">
+  <property name="package"    value="${phing.project.name}" override="true" />
+  <property name="build_root" value="./_build"              override="true" />
+  <property name="build_dir"  value="${build_root}/tmp"     override="true" />
+  <property name="srcdir"     value="${project.basedir}"    override="true" />
+
+  <!-- Fileset for all files -->
+  <fileset dir="." id="allfiles">
+    <include name="**" />
+  </fileset>
+
+
+  <!-- ============================================ -->
+  <!-- Target: prepare                              -->
+  <!-- ============================================ -->
+  <target name="prepare">
+    <echo msg="Making directory ${build_dir}" />
+    <mkdir dir="${build_dir}" />
+
+    <if>
+      <not>
+        <isset property="env" />
+      </not>
+      <then>
+        <propertyprompt propertyName="env" defaultValue="dev" promptText="What environment do you want to build for?" />
+      </then>
+    </if>
+
+    <echo msg="Loading ${env} properties" />
+    <property file="./build.properties" environment="${env}" />
+  </target>
+
+
+  <!-- ============================================ -->
+  <!-- Target: git-checkout                         -->
+  <!-- ============================================ -->
+  <target name="git-checkout" depends="prepare">
+    <echo msg="Checking out latest code" />
+    <exec command="git checkout-index --prefix ${build_dir}/ -a" />
+  </target>
+
+
+  <!-- ============================================ -->
+  <!-- Target: build                                -->
+  <!-- ============================================ -->
+  <target name="build" depends="git-checkout" description="builds this package">
+    <echo msg="Building" />
+
+    <!--
+      Creates config/local.js by copying the template (config/local.js.dist)
+      and replacing placeholders with values defined in build.properties.
+     -->
+    <move file="${build_dir}/config/local.js.dist" tofile="${build_dir}/config/local.js">
+      <filterchain>
+        <replacetokens begintoken="##" endtoken="##">
+          <token key="facebook_app_secret" value="${env.facebook_app_secret}" />
+
+          <token key="db.local.adapter"  value="${${env}.db.local.adapter}" />
+          <token key="db.local.host"     value="${${env}.db.local.host}" />
+          <token key="db.local.username" value="${${env}.db.local.username}" />
+          <token key="db.local.password" value="${${env}.db.local.password}" />
+          <token key="db.local.database" value="${${env}.db.local.database}" />
+
+          <token key="db.hadra.adapter"  value="${${env}.db.hadra.adapter}" />
+          <token key="db.hadra.host"     value="${${env}.db.hadra.host}" />
+          <token key="db.hadra.username" value="${${env}.db.hadra.username}" />
+          <token key="db.hadra.password" value="${${env}.db.hadra.password}" />
+          <token key="db.hadra.database" value="${${env}.db.hadra.database}" />
+        </replacetokens>
+      </filterchain>
+    </move>
+
+    <!--
+      Fetches dependencies using npm
+    -->
+    <echo msg="Installing dependencies" />
+    <phingcall target="npm_install" />
+
+    <!-- Done -->
+    <echo msg="Built in ${build_dir}." />
+  </target>
+
+  <target name="npm_install">
+    <property name="node_modules_cache" value="${build_root}/node_modules_cache" />
+    <mkdir dir="${node_modules_cache}" />
+
+    <!-- Install node modules dependencies (if needed) and caches them -->
+    <filehash file="${build_dir}/package.json" propertyname="md5" />
+    <echo>package.json MD5: ${md5}</echo>
+
+    <if>
+      <available property="cache_dir_exists" file="${node_modules_cache}/${md5}" type="dir" />
+      <then>
+        <echo>Found a cached entry in node_modules directory for this MD5.</echo>
+
+        <!-- Restore the cache node_modules folder -->
+        <copy todir="${build_dir}/node_modules">
+          <fileset dir="${node_modules_cache}/${md5}" />
+        </copy>
+
+      </then>
+      <else>
+        <echo>No entry found in node_modules_cache directory for this MD5. Fetching...</echo>
+        <exec command="npm install" dir="${build_dir}" checkreturn="true" />
+
+        <!-- Cache the node_modules folder we just fetched -->
+        <copy todir="${node_modules_cache}/${md5}">
+          <fileset dir="${build_dir}/node_modules" />
+        </copy>
+      </else>
+    </if>
+  </target>
+
+  <!-- ============================================ -->
+  <!-- (DEFAULT)  Target: dist                      -->
+  <!-- ============================================ -->
+  <target name="deploy" description="builds and deploys this package">
+    <php function="time" returnProperty="time" />
+    <property name="archive_file" value="${build_root}/build-${time}.zip" />
+
+    <echo msg="Creating archive..." />
+
+    <echo>Zipping ${build_dir}</echo>
+    <zip destfile="${archive_file}">
+      <fileset dir="${build_dir}">
+        <exclude name=".*" />
+        <exclude name="build.xml" />
+        <exclude name="build.properties" />
+        <include name=".sailsrc" />
+      </fileset>
+    </zip>
+
+    <echo msg="Archive created: ${archive_file}" />
+  </target>
+
+
+  <!-- ============================================ -->
+  <!-- Target: Rebuild                              -->
+  <!-- ============================================ -->
+  <target name="rebuild" description="rebuilds this package">
+    <phingcall target="cleanup" />
+    <phingcall target="build" />
+  </target>
+
+
+  <!-- ============================================ -->
+  <!-- Target: Cleanup                              -->
+  <!-- ============================================ -->
+  <target name="cleanup" description="removes the files generated by previous builds">
+    <delete dir="${build_dir}" />
+  </target>
+
+  <target name="debug">
+    <foreach param="filename" absparam="absfilename" target="echo_file">
+      <fileset dir="${build_dir}">
+        <exclude name="node_modules/**" />
+        <exclude name=".*" />
+        <exclude name="Gruntfile.js" />
+        <exclude name="package.json" />
+        <exclude name="README.md" />
+        <exclude name="build.xml" />
+        <exclude name="build.properties" />
+      </fileset>
+    </foreach>
+  </target>
+
+  <target name="echo_file">
+    <echo message="filename: ${filename}" />
+  </target>
+</project>

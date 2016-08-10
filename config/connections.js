@@ -28,8 +28,8 @@ module.exports.connections = {
   * Installed by default.                                                    *
   *                                                                          *
   ***************************************************************************/
-  localDiskDb: {
-    adapter: 'sails-disk',
+  local: {
+    // Defined in config/local.js
   },
 
   /***************************************************************************
@@ -41,11 +41,7 @@ module.exports.connections = {
   *                                                                          *
   ***************************************************************************/
   hadraDb: {
-    adapter:  'sails-mysql',
-    host:     'localhost',
-    user:     'root',
-    // password: '',
-    database: 'hadra',
+    // Defined in config/local.js
   },
 
   /***************************************************************************

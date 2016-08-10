@@ -6,7 +6,7 @@
 
 var graph = require('fbgraph');
 
-graph.setAccessToken(sails.config.hadra.appId + '|' + sails.config.hadra.appSecret);
+graph.setAccessToken(sails.config.hadra.appId + '|' + sails.config.hadra.facebookAppSecret);
 graph.setVersion('2.7');
 
 module.exports = {

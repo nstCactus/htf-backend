@@ -30,15 +30,22 @@
 
 module.exports = {
   hadra: {
-    appSecret: '',
+    facebookAppSecret: '##facebook_app_secret##',
   },
   connections: {
-    hadraDb: {
-      adapter:  'sails-mysql',
-      host:     '',
-      user:     '',
-      password: '',
-      database: '',
+    local: {
+      adapter:  '##db.local.adapter##',
+      host:     '##db.local.host##',
+      user:     '##db.local.username##',
+      password: '##db.local.password##',
+      database: '##db.local.database##',
+    },
+    hadra: {
+      adapter:  '##db.hadra.adapter##',
+      host:     '##db.hadra.host##',
+      user:     '##db.hadra.username##',
+      password: '##db.hadra.password##',
+      database: '##db.hadra.database##',
     },
   },
 };
