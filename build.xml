@@ -55,7 +55,7 @@
     <move file="${build_dir}/config/local.js.dist" tofile="${build_dir}/config/local.js">
       <filterchain>
         <replacetokens begintoken="##" endtoken="##">
-          <token key="facebook_app_secret" value="${env.facebook_app_secret}" />
+          <token key="facebook_app_secret" value="${${env}.facebook_app_secret}" />
 
           <token key="db.local.adapter"  value="${${env}.db.local.adapter}" />
           <token key="db.local.host"     value="${${env}.db.local.host}" />
@@ -72,67 +72,71 @@
       </filterchain>
     </move>
 
-    <!--
-      Fetches dependencies using npm
-    -->
-    <echo msg="Installing dependencies" />
-    <phingcall target="npm_install" />
-
     <!-- Done -->
     <echo msg="Built in ${build_dir}." />
-  </target>
-
-  <target name="npm_install">
-    <property name="node_modules_cache" value="${build_root}/node_modules_cache" />
-    <mkdir dir="${node_modules_cache}" />
-
-    <!-- Install node modules dependencies (if needed) and caches them -->
-    <filehash file="${build_dir}/package.json" propertyname="md5" />
-    <echo>package.json MD5: ${md5}</echo>
-
-    <if>
-      <available property="cache_dir_exists" file="${node_modules_cache}/${md5}" type="dir" />
-      <then>
-        <echo>Found a cached entry in node_modules directory for this MD5.</echo>
-
-        <!-- Restore the cache node_modules folder -->
-        <copy todir="${build_dir}/node_modules">
-          <fileset dir="${node_modules_cache}/${md5}" />
-        </copy>
-
-      </then>
-      <else>
-        <echo>No entry found in node_modules_cache directory for this MD5. Fetching...</echo>
-        <exec command="npm install" dir="${build_dir}" checkreturn="true" />
-
-        <!-- Cache the node_modules folder we just fetched -->
-        <copy todir="${node_modules_cache}/${md5}">
-          <fileset dir="${build_dir}/node_modules" />
-        </copy>
-      </else>
-    </if>
   </target>
 
   <!-- ============================================ -->
   <!-- (DEFAULT)  Target: dist                      -->
   <!-- ============================================ -->
-  <target name="deploy" description="builds and deploys this package">
+  <target name="deploy" depends="build" description="builds and deploys this package">
     <php function="time" returnProperty="time" />
-    <property name="archive_file" value="${build_root}/build-${time}.zip" />
+    <property name="archive_filename" value="build-${time}.zip" />
+    <property name="archive_path" value="${build_root}/${archive_filename}" />
 
     <echo msg="Creating archive..." />
-
-    <echo>Zipping ${build_dir}</echo>
-    <zip destfile="${archive_file}">
+    <zip destfile="${archive_path}">
       <fileset dir="${build_dir}">
-        <exclude name=".*" />
+        <include name="**/**" />
+        <exclude name=".editorconfig" />
+        <exclude name=".eslintignore" />
+        <exclude name=".eslintrc" />
+        <exclude name=".gitignore" />
         <exclude name="build.xml" />
         <exclude name="build.properties" />
-        <include name=".sailsrc" />
       </fileset>
     </zip>
 
-    <echo msg="Archive created: ${archive_file}" />
+    <echo msg="Archive created: ${archive_path}" />
+
+    <!-- Prompt for the SSH passphrase -->
+    <propertyprompt
+      promptText="SSH passphrase for key ${${env}.ssh.private_key}:"
+      propertyName="ssh_passphrase" />
+    <scp
+      username="${${env}.ssh.username}"
+      privkeyfile="${${env}.ssh.private_key}"
+      pubkeyfile="${${env}.ssh.public_key}"
+      privkeyfilepassphrase="${ssh_passphrase}"
+      host="${${env}.ssh.host}"
+      file="${archive_path}"
+      todir="${${env}.ssh.app_dir}"
+    />
+    <echo>File copied, now set things up</echo>
+
+    <!-- For readability of the script -->
+    <property name="wd" value="${${env}.ssh.app_dir}" />
+    <property name="bin" value="${wd}/bin" />
+    <ssh
+      username="${${env}.ssh.username}"
+      privkeyfile="${${env}.ssh.private_key}"
+      pubkeyfile="${${env}.ssh.public_key}"
+      privkeyfilepassphrase="${ssh_passphrase}"
+      host="${${env}.ssh.host}"
+      display="true"
+      failonerror="true"
+      command="cd ${wd};
+        echo Stopping app;
+        ${bin}/stop;
+        echo Unzipping ${archive_filename};
+        unzip -q ${archive_filename} -d app;
+        rm ${archive_filename};
+        cd app;
+        echo Installing node modules;
+        ${bin}/node ${bin}/npm install;
+        echo All good, let\'s start \!
+        ${bin}/start"
+      />
   </target>
 
 
