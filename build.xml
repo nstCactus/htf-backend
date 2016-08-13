@@ -38,7 +38,7 @@
   <!-- ============================================ -->
   <target name="git-checkout" depends="prepare">
     <echo msg="Checking out latest code" />
-    <exec command="git checkout-index --prefix ${build_dir}/ -a" />
+    <exec command="git archive branchname | (cd ${build_dir}; tar x)" />
   </target>
 
 
@@ -125,18 +125,8 @@
       host="${${env}.ssh.host}"
       display="true"
       failonerror="true"
-      command="cd ${wd};
-        echo Stopping app;
-        ${bin}/stop;
-        echo Unzipping ${archive_filename};
-        unzip -q ${archive_filename} -d app;
-        rm ${archive_filename};
-        cd app;
-        echo Installing node modules;
-        ${bin}/node ${bin}/npm install;
-        echo All good, let\'s start \!
-        ${bin}/start"
-      />
+      command="cd ${wd}; ${bin}/deploy ${archive_filename}"
+    />
   </target>
 
 

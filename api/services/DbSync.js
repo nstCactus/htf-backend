@@ -47,6 +47,11 @@ function handleSingleBooking(booking){
       booking.country = fix.country;
     }
 
+    if (fix.hasOwnProperty('facebook') && fix.facebook !== null && fix.facebook.startsWith('http')) {
+      // Use the facebook URL from the fix file
+      booking.facebook = fix.facebook;
+    }
+
     if (fix.hasOwnProperty('bio') && typeof fix.bio === 'object') {
       // Use the english bio from the fix file
       if (fix.bio.hasOwnProperty('en') && booking.bio.en !== null) {
@@ -95,14 +100,21 @@ function handleSingleBooking(booking){
             });
           }
 
-          FacebookGraph.getPageInfo(booking.facebook, (err, data, pageId) => {
-            handleGraphApiPageInfoResponse(err, data, pageId, createdArtist.id, fetchFacebookPicture);
-          });
+          if (booking.facebook.length > 0) {
+            FacebookGraph.getPageInfo(booking.facebook, (err, data, pageId) => {
+              handleGraphApiPageInfoResponse(err, data, pageId, createdArtist.id, fetchFacebookPicture);
+            });
+          } else {
+            sails.log.warn(`No facebook URL for artist "${booking.name}". Won't fetch Facebook cover (got picture from Hadra).`);
+          }
         });
       } else if (booking.facebook.length > 0) {
         FacebookGraph.getPageInfo(booking.facebook, (err, data, pageId) => {
           handleGraphApiPageInfoResponse(err, data, pageId, createdArtist.id);
         });
+      }
+      else {
+        sails.log.warn(`No facebook URL for artist "${booking.name}". Won't fetch Facebook picture nor cover.`);
       }
 
       var setType = 'live';
@@ -143,7 +155,6 @@ function handleSingleBooking(booking){
 function handleGraphApiPageInfoResponse(err, data, pageId, artistId, fetchPicture){
   var fileExt = '';
   fetchPicture = fetchPicture !== false; //eslint-disable-line no-param-reassign
-  sails.log.debug(`Graph API response for ${pageId}.`);
 
   if (err) {
     sails.log.error(`An error occurred while getting artist info (method: "/${pageId}", message: "${err.message}".)`);
@@ -165,7 +176,7 @@ function handleGraphApiPageInfoResponse(err, data, pageId, artistId, fetchPictur
     }
 
     // Save cover
-    if (data.cover && data.cover.source && _.isInteger(data.cover.offset_x) && _.isInteger(data.cover.offset_y)) {
+    if (data.cover && data.cover.source) {
       var filename = `${pageId}_cover${fileExt}` + getFileExtensionFromUrl(data.cover.source);
 
       sails.log.debug(`Fetching cover for ${pageId}`);
@@ -176,8 +187,8 @@ function handleGraphApiPageInfoResponse(err, data, pageId, artistId, fetchPictur
         } else {
           Artist.update(artistId, {
             banner:        filename,
-            bannerXOffset: data.cover.offset_x,
-            bannerYOffset: data.cover.offset_y,
+            bannerXOffset: data.cover.offset_x || 0,
+            bannerYOffset: data.cover.offset_y || 0,
           }).exec((err) => {
             if (err) {
               sails.log.error(`An error occurred while fetching cover for artist ${pageId}.`, err);
@@ -186,7 +197,7 @@ function handleGraphApiPageInfoResponse(err, data, pageId, artistId, fetchPictur
         }
       });
     } else {
-      sails.log.warn(`Unexpected response from Facebook Graph API (method: "${pageId}").`);
+      sails.log.warn(`Unexpected response from Facebook Graph API (method: "${pageId}").`, data);
     }
   }
 }
