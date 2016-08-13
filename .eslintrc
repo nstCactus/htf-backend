@@ -27,7 +27,7 @@
 
     // Best practices
     "block-scoped-var": 2,
-    "complexity": ["error", 5],
+    "complexity": ["error", 10],
     "consistent-return": 2,
     "curly": 2,
     "dot-location": [2, "property"],
@@ -83,7 +83,6 @@
 
 
     // Variables
-    "init-declarations": [ 2, "always" ],
     "no-catch-shadow": 2,
     "no-delete-var": 2,
 //    "no-undef": 2,
@@ -94,7 +93,6 @@
 
 
     // Node specific
-    "global-require": 2,
     "handle-callback-err": 2,
     "no-mixed-requires": 2,
     "no-new-require": 2,
