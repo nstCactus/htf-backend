@@ -38,7 +38,7 @@
   <!-- ============================================ -->
   <target name="git-checkout" depends="prepare">
     <echo msg="Checking out latest code" />
-    <exec command="git archive branchname | (cd ${build_dir}; tar x)" />
+    <exec command="git archive master | (cd ${build_dir}; tar x)" />
   </target>
 
 

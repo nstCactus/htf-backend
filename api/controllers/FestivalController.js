@@ -31,16 +31,24 @@ module.exports = {
         for (var i in sets) { // eslint-disable-line guard-for-in
           // Replace the picture path with the actual picture (base64 encoded)
           if (!_.isNull(sets[i].artist.photo)) {
-            // eslint-disable-next-line no-sync
-            tmpFileContent = fs.readFileSync(path.join(Artist.picturePath, sets[i].artist.photo));
-            sets[i].artist.photo = tmpFileContent.toString('base64');
+            try {
+              // eslint-disable-next-line no-sync
+              tmpFileContent = fs.readFileSync(path.join(Artist.picturePath, sets[i].artist.photo));
+              sets[i].artist.photo = tmpFileContent.toString('base64');
+            } catch (e) {
+              sails.log.error(`Error reading ${sets[i].artist.photo}`, e);
+            }
           }
 
           // Replace the cover path with the actual picture (base64 encoded)
           if (!_.isNull(sets[i].artist.banner)) {
-            // eslint-disable-next-line no-sync
-            tmpFileContent = fs.readFileSync(path.join(Artist.picturePath, sets[i].artist.banner));
-            sets[i].artist.banner = tmpFileContent.toString('base64');
+            try {
+              // eslint-disable-next-line no-sync
+              tmpFileContent        = fs.readFileSync(path.join(Artist.picturePath, sets[i].artist.banner));
+              sets[i].artist.banner = tmpFileContent.toString('base64');
+            } catch (e) {
+              sails.log.error(`Error reading ${sets[i].artist.banner}`, e);
+            }
           }
         }
 

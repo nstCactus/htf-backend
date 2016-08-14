@@ -10,7 +10,7 @@
 /* global FacebookGraph */
 
 const _         = require('lodash');
-const request   = require('request');
+const request   = require('request').defaults({ timeout: 60000 });
 const fs        = require('fs');
 const path      = require('path');
 const url       = require('url');
@@ -83,13 +83,15 @@ function handleSingleBooking(booking){
       sails.log.debug(err);
     } else {
       if (typeof booking.photo === 'string' && booking.photo.length > 0) {
-        var filename = booking.photo;
+        var extension = getFileExtensionFromUrl(booking.photo);
+        var filename = sanitizeFilename(booking.name, extension);
         if (filename.indexOf('ph_') === 0) {
           filename = filename.substr(3);
         }
 
         sails.log.debug(`Fetching picture from Hadra for ${booking.name}.`);
 
+        filename = 'photo_' + filename;
         savePicture(artistPicturesBaseUrl + booking.photo, filename, (err) => {
           var fetchFacebookPicture = typeof err !== 'undefined' && err !== null;
           if (!err) {
@@ -102,7 +104,7 @@ function handleSingleBooking(booking){
 
           if (booking.facebook.length > 0) {
             FacebookGraph.getPageInfo(booking.facebook, (err, data, pageId) => {
-              handleGraphApiPageInfoResponse(err, data, pageId, createdArtist.id, fetchFacebookPicture);
+              handleGraphApiPageInfoResponse(err, data, pageId, createdArtist, fetchFacebookPicture);
             });
           } else {
             sails.log.warn(`No facebook URL for artist "${booking.name}". Won't fetch Facebook cover (got picture from Hadra).`);
@@ -110,10 +112,9 @@ function handleSingleBooking(booking){
         });
       } else if (booking.facebook.length > 0) {
         FacebookGraph.getPageInfo(booking.facebook, (err, data, pageId) => {
-          handleGraphApiPageInfoResponse(err, data, pageId, createdArtist.id);
+          handleGraphApiPageInfoResponse(err, data, pageId, createdArtist);
         });
-      }
-      else {
+      } else {
         sails.log.warn(`No facebook URL for artist "${booking.name}". Won't fetch Facebook picture nor cover.`);
       }
 
@@ -148,12 +149,11 @@ function handleSingleBooking(booking){
  * @param {null|object} err           Not `null` if an error occurred.
  * @param {object}      data          Facebook Graph API response.
  * @param {string}      pageId        The page id used to make the request.
- * @param {int}         artistId      The database id of the artist to bind data with
+ * @param {Artist}      artist        The artist to bind data with.
  * @param {boolean}     fetchPicture  [optional] Should the profile picture be fetched. Defaults to `true`.
  * @return {void}
  */
-function handleGraphApiPageInfoResponse(err, data, pageId, artistId, fetchPicture){
-  var fileExt = '';
+function handleGraphApiPageInfoResponse(err, data, pageId, artist, fetchPicture){
   fetchPicture = fetchPicture !== false; //eslint-disable-line no-param-reassign
 
   if (err) {
@@ -168,7 +168,7 @@ function handleGraphApiPageInfoResponse(err, data, pageId, artistId, fetchPictur
       )
       {
         FacebookGraph.getPagePicture(pageId, (err, data, pageId) => {
-          handleGraphApiPagePictResponse(err, data, pageId, artistId);
+          handleGraphApiPagePictResponse(err, data, pageId, artist);
         });
       } else {
         sails.log.warn(`Unexpected response from Facebook Graph API (page id: "${pageId}").`);
@@ -177,7 +177,7 @@ function handleGraphApiPageInfoResponse(err, data, pageId, artistId, fetchPictur
 
     // Save cover
     if (data.cover && data.cover.source) {
-      var filename = `${pageId}_cover${fileExt}` + getFileExtensionFromUrl(data.cover.source);
+      var filename = 'cover_' + sanitizeFilename(artist.name, getFileExtensionFromUrl(data.cover.source));
 
       sails.log.debug(`Fetching cover for ${pageId}`);
 
@@ -185,7 +185,7 @@ function handleGraphApiPageInfoResponse(err, data, pageId, artistId, fetchPictur
         if (err) {
           sails.log.error(`An error occurred while downloading cover for ${pageId}.`, err);
         } else {
-          Artist.update(artistId, {
+          Artist.update(artist.id, {
             banner:        filename,
             bannerXOffset: data.cover.offset_x || 0,
             bannerYOffset: data.cover.offset_y || 0,
@@ -202,7 +202,7 @@ function handleGraphApiPageInfoResponse(err, data, pageId, artistId, fetchPictur
   }
 }
 
-function handleGraphApiPagePictResponse(err, data, pageId, artistId){
+function handleGraphApiPagePictResponse(err, data, pageId, artist){
   var filename = null;
 
   if (err) {
@@ -210,7 +210,7 @@ function handleGraphApiPagePictResponse(err, data, pageId, artistId){
   } else if (data.location) {
     sails.log.debug(`Fetching picture from Facebook for ${pageId}.`);
 
-    filename = `${pageId}_picture` + getFileExtensionFromUrl(data.location);
+    filename = 'photo_' + sanitizeFilename(artist.name, getFileExtensionFromUrl(data.location));
 
     savePicture(data.location, filename, handlePictureSaved);
   } else {
@@ -222,7 +222,7 @@ function handleGraphApiPagePictResponse(err, data, pageId, artistId){
     if (err) {
       sails.log.error(`An error occurred while downloading picture for ${pageId}.`, err);
     } else {
-      Artist.update(artistId, { photo: filename }).exec((err) => {
+      Artist.update(artist.id, { photo: filename }).exec((err) => {
         if (err) {
           sails.log.error(`An error occurred while updating artist record after fetching picture from Facebook (${pageId}).`, err);
         }
@@ -248,7 +248,6 @@ function savePicture(fileUrl, filename, callback){
     .on('response', handleResponse)
     .on('error', callback);
 
-  // TODO: Gérer les timeout
   function handleResponse(response){
     // Start piping to a file, if the request was a success (2xx) or a redirection (3xx)
     if (response.statusCode >= 200 && response.statusCode < 400) {
@@ -257,6 +256,7 @@ function savePicture(fileUrl, filename, callback){
 
     // Wait for request completion to announce success
     response.on('end', function(){
+      sails.log.debug(`Finished downloading ${filename}`);
       callback(null, fullPath);
     });
   }
@@ -277,4 +277,16 @@ function initArtistFixes(){
     delete artist.id;
     artistFixes[id] = artist;
   }
+}
+
+function sanitizeFilename(filename, extension){
+  if(extension.substr(0, 1) !== '.') {
+    extension = '.' + extension;
+  }
+
+  filename = filename.toString().toLowerCase();
+  filename = filename.replace(/[.–+=/|* ]/g, '-');
+  filename = filename.replace(/[^a-z0-9_-]/gi, '');
+
+  return filename + extension;
 }
