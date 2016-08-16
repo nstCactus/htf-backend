@@ -42,23 +42,28 @@ function handleSingleBooking(booking){
   if (artistFixes[booking.id]) {
     var fix = artistFixes[booking.id];
 
+    // Use the country from the fix file if available
+    if (fix.hasOwnProperty('name') && fix.name !== null) {
+      booking.name = fix.name;
+    }
+
+    // Use the country from the fix file if available
     if (fix.hasOwnProperty('country') && fix.country !== null) {
-      // Use the country from the fix file
       booking.country = fix.country;
     }
 
+    // Use the facebook URL from the fix file if available
     if (fix.hasOwnProperty('facebook') && fix.facebook !== null && fix.facebook.startsWith('http')) {
-      // Use the facebook URL from the fix file
       booking.facebook = fix.facebook;
     }
 
+    // Use the english bio from the fix file if available
     if (fix.hasOwnProperty('bio') && typeof fix.bio === 'object') {
-      // Use the english bio from the fix file
       if (fix.bio.hasOwnProperty('en') && booking.bio.en !== null) {
         booking.bioEn = fix.bio.en;
       }
 
-      // Use the french bio from the fix file
+      // Use the french bio from the fix file if available
       if (fix.bio.hasOwnProperty('fr') && booking.bio.fr !== null) {
         booking.bioFr = fix.bio.fr;
       }
