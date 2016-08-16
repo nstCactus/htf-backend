@@ -25,7 +25,6 @@ module.exports = {
         sails.log.error('An error occurred while fetching sets.', err);
 
         res.serverError();
-        return;
       } else {
         var tmpFileContent; // eslint-disable-line init-declarations
         for (var i in sets) { // eslint-disable-line guard-for-in
@@ -44,7 +43,7 @@ module.exports = {
           if (!_.isNull(sets[i].artist.banner)) {
             try {
               // eslint-disable-next-line no-sync
-              tmpFileContent        = fs.readFileSync(path.join(Artist.picturePath, sets[i].artist.banner));
+              tmpFileContent = fs.readFileSync(path.join(Artist.picturePath, sets[i].artist.banner));
               sets[i].artist.banner = tmpFileContent.toString('base64');
             } catch (e) {
               sails.log.error(`Error reading ${sets[i].artist.banner}`, e);
@@ -53,7 +52,6 @@ module.exports = {
         }
 
         res.json(sets);
-        return;
       }
     });
   },

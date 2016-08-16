@@ -94,6 +94,8 @@ function handleSingleBooking(booking){
         filename = 'photo_' + filename;
         savePicture(artistPicturesBaseUrl + booking.photo, filename, (err) => {
           var fetchFacebookPicture = typeof err !== 'undefined' && err !== null;
+
+          // Update artist if no error
           if (!err) {
             Artist.update(createdArtist.id, { photo: filename }, (err) => {
               if (err) {
@@ -102,6 +104,7 @@ function handleSingleBooking(booking){
             });
           }
 
+          // Query Graph API for artist infos
           if (booking.facebook.length > 0) {
             FacebookGraph.getPageInfo(booking.facebook, (err, data, pageId) => {
               handleGraphApiPageInfoResponse(err, data, pageId, createdArtist, fetchFacebookPicture);
@@ -111,6 +114,7 @@ function handleSingleBooking(booking){
           }
         });
       } else if (booking.facebook.length > 0) {
+        // Query Graph API for artist infos
         FacebookGraph.getPageInfo(booking.facebook, (err, data, pageId) => {
           handleGraphApiPageInfoResponse(err, data, pageId, createdArtist);
         });
@@ -249,16 +253,27 @@ function savePicture(fileUrl, filename, callback){
     .on('error', callback);
 
   function handleResponse(response){
-    // Start piping to a file, if the request was a success (2xx) or a redirection (3xx)
+    // Start piping to a file, if the request was a success (2xx) or a redirection (3xx).
     if (response.statusCode >= 200 && response.statusCode < 400) {
-      currentRequest.pipe(fs.createWriteStream(fullPath));
-    }
+      if (response.request.path === '/404.htm') {
+        //  Hadra's website redirects to /404.htm (which responds with a status code 200) if an error occurs...
+        sails.log.warn(`404: ${fileUrl}. Will fallback to Facebook.`);
+        callback({
+          code:     404,
+          response: response,
+          url:      fileUrl,
+        }, fullPath);
+      } else {
+        // Write image
+        currentRequest.pipe(fs.createWriteStream(fullPath));
 
-    // Wait for request completion to announce success
-    response.on('end', function(){
-      sails.log.debug(`Finished downloading ${filename}`);
-      callback(null, fullPath);
-    });
+        // Wait for request completion to announce success
+        response.on('end', function(){
+          sails.log.debug(`Finished downloading ${filename}`);
+          callback(null, fullPath);
+        });
+      }
+    }
   }
 }
 
